@@ -666,11 +666,16 @@
             // Save the ajax negotiate request object so we can abort it if stop is called while the request is in flight.
             connection._.negotiateRequest = signalR.transports._logic.ajax(connection, {
                 url: url,
+                timeout: 5000,
                 error: function (error, statusText) {
                     // We don't want to cause any errors if we're aborting our own negotiate request.
                     if (statusText !== _negotiateAbortText) {
-                        onFailed(error, connection);
-                    } else {
+                        if (statusText === "timeout") {
+                            connection._.negotiateRequest = signalR.transports._logic.ajax(connection, this);
+                        } else {
+                            onFailed(error, connection);
+                        }
+                    } else if(statusText === _negotiateAbortText) {
                         // This rejection will noop if the deferred has already been resolved or rejected.
                         deferred.reject(signalR._.error(resources.stoppedWhileNegotiating, null /* error */, connection._.negotiateRequest));
                     }
